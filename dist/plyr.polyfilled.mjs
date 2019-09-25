@@ -247,8 +247,8 @@ var store = global_1[SHARED] || setGlobal(SHARED, {});
 (module.exports = function (key, value) {
   return store[key] || (store[key] = value !== undefined ? value : {});
 })('versions', []).push({
-  version: '3.1.3',
-  mode: 'global',
+  version: '3.2.1',
+  mode:  'global',
   copyright: '© 2019 Denis Pushkarev (zloirock.ru)'
 });
 });
@@ -1184,7 +1184,7 @@ if ([].keys) {
 if (IteratorPrototype == undefined) IteratorPrototype = {};
 
 // 25.1.2.1.1 %IteratorPrototype%[@@iterator]()
-if (!has(IteratorPrototype, ITERATOR)) hide(IteratorPrototype, ITERATOR, returnThis);
+if ( !has(IteratorPrototype, ITERATOR)) hide(IteratorPrototype, ITERATOR, returnThis);
 
 var iteratorsCore = {
   IteratorPrototype: IteratorPrototype,
@@ -1271,7 +1271,7 @@ var defineIterator = function (Iterable, NAME, IteratorConstructor, next, DEFAUL
   if (anyNativeIterator) {
     CurrentIteratorPrototype = objectGetPrototypeOf(anyNativeIterator.call(new Iterable()));
     if (IteratorPrototype$2 !== Object.prototype && CurrentIteratorPrototype.next) {
-      if (objectGetPrototypeOf(CurrentIteratorPrototype) !== IteratorPrototype$2) {
+      if ( objectGetPrototypeOf(CurrentIteratorPrototype) !== IteratorPrototype$2) {
         if (objectSetPrototypeOf) {
           objectSetPrototypeOf(CurrentIteratorPrototype, IteratorPrototype$2);
         } else if (typeof CurrentIteratorPrototype[ITERATOR$1] != 'function') {
@@ -1290,7 +1290,7 @@ var defineIterator = function (Iterable, NAME, IteratorConstructor, next, DEFAUL
   }
 
   // define iterator
-  if (IterablePrototype[ITERATOR$1] !== defaultIterator) {
+  if ( IterablePrototype[ITERATOR$1] !== defaultIterator) {
     hide(IterablePrototype, ITERATOR$1, defaultIterator);
   }
   iterators[NAME] = defaultIterator;
@@ -3802,6 +3802,10 @@ function _iterableToArray(iter) {
 }
 
 function _iterableToArrayLimit(arr, i) {
+  if (!(Symbol.iterator in Object(arr) || Object.prototype.toString.call(arr) === "[object Arguments]")) {
+    return;
+  }
+
   var _arr = [];
   var _n = true;
   var _d = false;
@@ -4009,7 +4013,16 @@ function _nonIterableRest() {
     global.URLSearchParams = URLSearchParams;
   };
 
-  if (!('URLSearchParams' in global) || new global.URLSearchParams('?a=1').toString() !== 'a=1') {
+  var checkIfURLSearchParamsSupported = function checkIfURLSearchParamsSupported() {
+    try {
+      var URLSearchParams = global.URLSearchParams;
+      return new URLSearchParams('?a=1').toString() === 'a=1' && typeof URLSearchParams.prototype.set === 'function';
+    } catch (e) {
+      return false;
+    }
+  };
+
+  if (!checkIfURLSearchParamsSupported()) {
     polyfillURLSearchParams();
   }
 
@@ -4723,17 +4736,17 @@ var collection = function (CONSTRUCTOR_NAME, wrapper, common, IS_MAP, IS_WEAK) {
   var fixMethod = function (KEY) {
     var nativeMethod = NativePrototype[KEY];
     redefine(NativePrototype, KEY,
-      KEY == 'add' ? function add(a) {
-        nativeMethod.call(this, a === 0 ? 0 : a);
+      KEY == 'add' ? function add(value) {
+        nativeMethod.call(this, value === 0 ? 0 : value);
         return this;
-      } : KEY == 'delete' ? function (a) {
-        return IS_WEAK && !isObject(a) ? false : nativeMethod.call(this, a === 0 ? 0 : a);
-      } : KEY == 'get' ? function get(a) {
-        return IS_WEAK && !isObject(a) ? undefined : nativeMethod.call(this, a === 0 ? 0 : a);
-      } : KEY == 'has' ? function has(a) {
-        return IS_WEAK && !isObject(a) ? false : nativeMethod.call(this, a === 0 ? 0 : a);
-      } : function set(a, b) {
-        nativeMethod.call(this, a === 0 ? 0 : a, b);
+      } : KEY == 'delete' ? function (key) {
+        return IS_WEAK && !isObject(key) ? false : nativeMethod.call(this, key === 0 ? 0 : key);
+      } : KEY == 'get' ? function get(key) {
+        return IS_WEAK && !isObject(key) ? undefined : nativeMethod.call(this, key === 0 ? 0 : key);
+      } : KEY == 'has' ? function has(key) {
+        return IS_WEAK && !isObject(key) ? false : nativeMethod.call(this, key === 0 ? 0 : key);
+      } : function set(key, value) {
+        nativeMethod.call(this, key === 0 ? 0 : key, value);
         return this;
       }
     );
@@ -4750,7 +4763,7 @@ var collection = function (CONSTRUCTOR_NAME, wrapper, common, IS_MAP, IS_WEAK) {
     var instance = new Constructor();
     // early implementations not supports chaining
     var HASNT_CHAINING = instance[ADDER](IS_WEAK ? {} : -0, 1) != instance;
-    // V8 ~  Chromium 40- weak-collections throws on primitives, but should return false
+    // V8 ~ Chromium 40- weak-collections throws on primitives, but should return false
     var THROWS_ON_PRIMITIVES = fails(function () { instance.has(1); });
     // most early implementations doesn't supports iterables, most modern - not close it correctly
     // eslint-disable-next-line no-new
@@ -5219,7 +5232,7 @@ function matches(element, selector) {
     return Array.from(document.querySelectorAll(selector)).includes(this);
   }
 
-  var matches = match;
+  var matches =  match;
   return matches.call(element, selector);
 }
 
@@ -5565,6 +5578,8 @@ function () {
   return RangeTouch;
 }();
 
+var nativePromiseConstructor = global_1.Promise;
+
 var SPECIES$5 = wellKnownSymbol('species');
 
 var setSpecies = function (CONSTRUCTOR_NAME) {
@@ -5687,7 +5702,7 @@ var IS_NODE = classofRaw(process$1) == 'process';
 var queueMicrotaskDescriptor = getOwnPropertyDescriptor$3(global_1, 'queueMicrotask');
 var queueMicrotask = queueMicrotaskDescriptor && queueMicrotaskDescriptor.value;
 
-var flush, head, last, notify, toggle, node, promise;
+var flush, head, last, notify, toggle, node, promise, then;
 
 // modern engines have queueMicrotask method
 if (!queueMicrotask) {
@@ -5725,8 +5740,9 @@ if (!queueMicrotask) {
   } else if (Promise$1 && Promise$1.resolve) {
     // Promise.resolve without an argument throws an error in LG WebOS 2
     promise = Promise$1.resolve(undefined);
+    then = promise.then;
     notify = function () {
-      promise.then(flush);
+      then.call(promise, flush);
     };
   // for other environments - macrotask based on:
   // - setImmediate
@@ -5811,7 +5827,7 @@ var PROMISE = 'Promise';
 var getInternalState$3 = internalState.get;
 var setInternalState$6 = internalState.set;
 var getInternalPromiseState = internalState.getterFor(PROMISE);
-var PromiseConstructor = global_1[PROMISE];
+var PromiseConstructor = nativePromiseConstructor;
 var TypeError$1 = global_1.TypeError;
 var document$2 = global_1.document;
 var process$2 = global_1.process;
@@ -5829,7 +5845,7 @@ var FULFILLED = 1;
 var REJECTED = 2;
 var HANDLED = 1;
 var UNHANDLED = 2;
-var Internal, OwnPromiseCapability, PromiseWrapper;
+var Internal, OwnPromiseCapability, PromiseWrapper, nativeThen;
 
 var FORCED$2 = isForced_1(PROMISE, function () {
   // correct subclassing with @@species support
@@ -6054,13 +6070,25 @@ if (FORCED$2) {
       : newGenericPromiseCapability(C);
   };
 
-  // wrap fetch result
-  if (typeof $fetch == 'function') _export({ global: true, enumerable: true, forced: true }, {
-    // eslint-disable-next-line no-unused-vars
-    fetch: function fetch(input) {
-      return promiseResolve(PromiseConstructor, $fetch.apply(global_1, arguments));
-    }
-  });
+  if ( typeof nativePromiseConstructor == 'function') {
+    nativeThen = nativePromiseConstructor.prototype.then;
+
+    // wrap native Promise#then for native async functions
+    redefine(nativePromiseConstructor.prototype, 'then', function then(onFulfilled, onRejected) {
+      var that = this;
+      return new PromiseConstructor(function (resolve, reject) {
+        nativeThen.call(that, resolve, reject);
+      }).then(onFulfilled, onRejected);
+    });
+
+    // wrap fetch result
+    if (typeof $fetch == 'function') _export({ global: true, enumerable: true, forced: true }, {
+      // eslint-disable-next-line no-unused-vars
+      fetch: function fetch(input) {
+        return promiseResolve(PromiseConstructor, $fetch.apply(global_1, arguments));
+      }
+    });
+  }
 }
 
 _export({ global: true, wrap: true, forced: FORCED$2 }, {
@@ -6083,11 +6111,11 @@ _export({ target: PROMISE, stat: true, forced: FORCED$2 }, {
   }
 });
 
-_export({ target: PROMISE, stat: true, forced: FORCED$2 }, {
+_export({ target: PROMISE, stat: true, forced:  FORCED$2 }, {
   // `Promise.resolve` method
   // https://tc39.github.io/ecma262/#sec-promise.resolve
   resolve: function resolve(x) {
-    return promiseResolve(this, x);
+    return promiseResolve( this, x);
   }
 });
 
@@ -6315,12 +6343,26 @@ function repaint(element, delay) {
 var browser = {
   isIE:
   /* @cc_on!@ */
-  !!document.documentMode,
+   !!document.documentMode,
   isEdge: window.navigator.userAgent.includes('Edge'),
   isWebkit: 'WebkitAppearance' in document.documentElement.style && !/Edge/.test(navigator.userAgent),
   isIPhone: /(iPhone|iPod)/gi.test(navigator.platform),
   isIos: /(iPad|iPhone|iPod)/gi.test(navigator.platform)
 };
+
+var nativeReverse = [].reverse;
+var test$1 = [1, 2];
+
+// `Array.prototype.reverse` method
+// https://tc39.github.io/ecma262/#sec-array.prototype.reverse
+// fix for Safari 12.0 bug
+// https://bugs.webkit.org/show_bug.cgi?id=188794
+_export({ target: 'Array', proto: true, forced: String(test$1) === String(test$1.reverse()) }, {
+  reverse: function reverse() {
+    if (isArray(this)) this.length = this.length;
+    return nativeReverse.call(this);
+  }
+});
 
 // https://github.com/WICG/EventListenerOptions/blob/gh-pages/explainer.md
 // https://www.youtube.com/watch?v=NPM6172J22g
@@ -6721,7 +6763,7 @@ function matches$1(element, selector) {
     return Array.from(document.querySelectorAll(selector)).includes(this);
   }
 
-  var method = match;
+  var method =  match;
   return method.call(element, selector);
 } // Find all elements
 
@@ -11771,6 +11813,12 @@ var vimeo = {
         frame.setAttribute('tabindex', -1);
       }
     });
+    player.embed.on('bufferstart', function () {
+      triggerEvent.call(player, player.media, 'waiting');
+    });
+    player.embed.on('bufferend', function () {
+      triggerEvent.call(player, player.media, 'playing');
+    });
     player.embed.on('play', function () {
       assurePlaybackState.call(player, true);
       triggerEvent.call(player, player.media, 'playing');
@@ -12200,6 +12248,11 @@ var youtube = {
               }
 
               assurePlaybackState$1.call(player, false);
+              break;
+
+            case 3:
+              // Trigger waiting event to add loading classes to container as the video buffers.
+              triggerEvent.call(player, player.media, 'waiting');
               break;
 
             default:

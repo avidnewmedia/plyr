@@ -60,6 +60,10 @@ function _iterableToArray(iter) {
 }
 
 function _iterableToArrayLimit(arr, i) {
+  if (!(Symbol.iterator in Object(arr) || Object.prototype.toString.call(arr) === "[object Arguments]")) {
+    return;
+  }
+
   var _arr = [];
   var _n = true;
   var _d = false;
@@ -109,7 +113,7 @@ function matches(element, selector) {
     return Array.from(document.querySelectorAll(selector)).includes(this);
   }
 
-  var matches = match;
+  var matches =  match;
   return matches.call(element, selector);
 }
 
@@ -570,7 +574,7 @@ function repaint(element, delay) {
 var browser = {
   isIE:
   /* @cc_on!@ */
-  !!document.documentMode,
+   !!document.documentMode,
   isEdge: window.navigator.userAgent.includes('Edge'),
   isWebkit: 'WebkitAppearance' in document.documentElement.style && !/Edge/.test(navigator.userAgent),
   isIPhone: /(iPhone|iPod)/gi.test(navigator.platform),
@@ -977,7 +981,7 @@ function matches$1(element, selector) {
     return Array.from(document.querySelectorAll(selector)).includes(this);
   }
 
-  var method = match;
+  var method =  match;
   return method.call(element, selector);
 } // Find all elements
 
@@ -5882,6 +5886,12 @@ var vimeo = {
         frame.setAttribute('tabindex', -1);
       }
     });
+    player.embed.on('bufferstart', function () {
+      triggerEvent.call(player, player.media, 'waiting');
+    });
+    player.embed.on('bufferend', function () {
+      triggerEvent.call(player, player.media, 'playing');
+    });
     player.embed.on('play', function () {
       assurePlaybackState.call(player, true);
       triggerEvent.call(player, player.media, 'playing');
@@ -6313,6 +6323,11 @@ var youtube = {
               }
 
               assurePlaybackState$1.call(player, false);
+              break;
+
+            case 3:
+              // Trigger waiting event to add loading classes to container as the video buffers.
+              triggerEvent.call(player, player.media, 'waiting');
               break;
 
             default:
